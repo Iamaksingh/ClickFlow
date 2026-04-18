@@ -1,5 +1,6 @@
 import {nanoid} from 'nanoid';
 import Link from '../models/link.model.js';
+import ClickEvent from '../models/ClickEvent.model.js';
 import ApiResponse from '../utils/apiResponse.js';
 
 //controller function to create a new shortened link. It validates the input, generates a unique short code, saves the link to the database,
@@ -65,12 +66,36 @@ const redirectLink = async (req, res) => {
             return res.status(404).json(ApiResponse.error("Not a valid short URL, try again with a different link"));
         }
 
-        return res.redirect(302, link.originalUrl);  //if short code is found, redirect to the original URL with a 302 status code.
+        // Extract metadata
+        const referrer = req.get("referer") || "direct";   //referrer is from where does user came from, use "direct" in case user sends empty or null value.
+        const userAgent = req.get("user-agent");
+        const device = getDeviceType(userAgent);
+
+        //use non blocking for instant rederect
+        ClickEvent.create( { linkId: link._id , referrer, device, } ).catch(console.error);
+
+        //if short code is found, redirect to the original URL with a 302 status code.
+        return res.redirect(302, link.originalUrl);  
    
     } catch (err) {
         return res.status(500).json(ApiResponse.error("Server error", err.message));
     }
 };
 
+
+//helper function to determine the device on which the link was clicked
+const getDeviceType = (userAgent) => {
+    if (!userAgent) return "desktop";
+    userAgent = userAgent.toLowerCase();
+    if (userAgent.includes("mobile")){
+        return "mobile";
+    }
+    if (userAgent.includes("tablet")){ 
+        return "tablet";
+    }
+    return "desktop";
+};
+
+
 //export the controller functions to be used in route definitions
-export { createLink, redirectLink };
+export { createLink, redirectLink, getDeviceType };
