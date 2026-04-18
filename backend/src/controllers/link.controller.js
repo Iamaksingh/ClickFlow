@@ -38,7 +38,7 @@ const createLink = async (req, res) => {
             return res.status(500).json(ApiResponse.error("Failed to generate unique short code, please try again later"));
         }
 
-        const newLink = new Link({ originalUrl, shortCode });  //create new link document and save to database
+        const newLink = new Link({ originalUrl: url, shortCode, userId: req.user._id });  //create new link document and refer it to the user and save to database
         await newLink.save(); 
 
         const data = {  //create data object to return in response
@@ -60,7 +60,7 @@ const redirectLink = async (req, res) => {
     try {
         const { shortCode } = req.params;
         //only select what is needed to optimize query performance and return as js onject and not a model instance
-        const link = await Link.findOne({ shortCode }).select("originalUrl").lean();  
+        const link = await Link.findOne({ shortCode }).select("_id originalUrl").lean();  
 
         if (!link) {    //if short code is not found in database return 404 error response
             return res.status(404).json(ApiResponse.error("Not a valid short URL, try again with a different link"));
@@ -83,6 +83,23 @@ const redirectLink = async (req, res) => {
 };
 
 
+//get user's link and sort then in descending order of creation date. 
+const getUserLinks = async (req, res) => {
+    try {
+        const links = await Link.find({ userId: req.user._id }).sort({ createdAt: -1 });
+        const data = links.map(link => ({
+            originalUrl: link.originalUrl,
+            shortCode: link.shortCode,
+            shortUrl: `${req.protocol}://${req.get("host")}/${link.shortCode}`,
+            createdAt: link.createdAt
+        }));
+        return res.json(ApiResponse.success("User links fetched", data));
+    } catch (err) {
+        return res.status(500).json(ApiResponse.error("Error fetching links"));
+    }
+};
+
+
 //helper function to determine the device on which the link was clicked
 const getDeviceType = (userAgent) => {
     if (!userAgent) return "desktop";
@@ -98,4 +115,4 @@ const getDeviceType = (userAgent) => {
 
 
 //export the controller functions to be used in route definitions
-export { createLink, redirectLink, getDeviceType };
+export { createLink, redirectLink, getDeviceType , getUserLinks};
