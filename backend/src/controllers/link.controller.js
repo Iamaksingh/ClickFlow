@@ -71,9 +71,19 @@ const redirectLink = async (req, res) => {
         const userAgent = req.get("user-agent");
         const device = getDeviceType(userAgent);
 
-        //use non blocking for instant rederect
-        ClickEvent.create( { linkId: link._id , referrer, device, } ).catch(console.error);
+        const window = 2 * 60 * 1000;  // 2 minutes window to prevent multiple clicks from same user in short time frame, this is to avoid spamming and get more accurate click data.
 
+        const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
+        const existing = await ClickEvent.findOne({
+            linkId: link._id,
+            ip,
+            timestamp: { $gte: new Date(Date.now() - window) }
+        });
+        
+        if (!existing) {
+            //use non blocking for instant rederect
+            ClickEvent.create( { linkId: link._id , referrer, device, ip } ).catch(err => console.error("Click log failed:", err));
+        }
         //if short code is found, redirect to the original URL with a 302 status code.
         return res.redirect(302, link.originalUrl);  
    

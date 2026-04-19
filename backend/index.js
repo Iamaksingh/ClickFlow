@@ -10,6 +10,7 @@ import healthCheckRoutes from "./src/routes/healthCheck.routes.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import linkRoutes from "./src/routes/link.routes.js";
 import {redirectLink} from "./src/controllers/link.controller.js";
+import { redirectLimiter } from "./src/middleware/rateLimiter.middleware.js";
 
 //defining the port
 const PORT = process.env.PORT || 5000;
@@ -31,7 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/links", linkRoutes);
 
 //define route for redirecting to the original URL when a short URL is accessed
-app.get("/:shortCode", redirectLink);
+app.get("/:shortCode", redirectLimiter, redirectLink);
 
 //before starting the server, connect to the database 
 const startServer = async () => { 

@@ -18,6 +18,9 @@ const clickSchema = new mongoose.Schema({   //create a click event schema to sto
 		type: String,
 		enum: ["mobile", "desktop", "tablet"],
 	},
+	ip: { 
+		type: String 
+	}
 });
 
 export default mongoose.model("ClickEvent", clickSchema);
