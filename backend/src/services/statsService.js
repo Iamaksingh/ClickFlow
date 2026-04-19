@@ -84,8 +84,70 @@ const getPeakHour = async (linkId) => {
         }
     ]);
 
-    return result[0]?._id ?? null;
+    return result[0]?._id ?? 0;
 };
 
 
-export { getTotalClicks, getClicksPerDay, getPeakHour };
+//get trend information
+const getTrend = async (linkId) => {
+    const now = new Date();
+
+    // Normalize to midnight today
+    const todayStart = new Date(now.setHours(0, 0, 0, 0));
+
+    // Last 3 days (today + 2 before)
+    const last3Start = new Date(todayStart);
+    last3Start.setDate(last3Start.getDate() - 3);
+
+    // Previous 3 days
+    const prev3Start = new Date(todayStart);
+    prev3Start.setDate(prev3Start.getDate() - 6);
+
+    const result = await ClickEvent.aggregate([
+        {
+            $match: {
+                linkId: toObjectId(linkId),
+                timestamp: { $gte: prev3Start }
+            }
+        },
+        {
+            $project: {
+                period: {
+                    $cond: [
+                        { $gte: ["$timestamp", last3Start] },
+                        "last3",
+                        "prev3"
+                    ]
+                }
+            }
+        },
+        {
+            $group: {
+                _id: "$period",
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+
+    let last3 = 0, prev3 = 0;
+
+    result.forEach(d => {
+        if (d._id === "last3"){
+            last3 = d.count;
+        }
+        if (d._id === "prev3"){
+            prev3 = d.count;
+        }
+    });
+
+    if (last3 > prev3) {
+        return "up";
+    }
+    if (last3 < prev3) {
+        return "down";
+    }
+    return "flat";
+};
+
+
+export { getTotalClicks, getClicksPerDay, getPeakHour, getTrend };
