@@ -23,7 +23,15 @@ const signup = async (req, res) => {
         const user = await User.create({ email : normalizedEmail, password });
         // generate token
         const token = generateToken(user._id);
-        res.status(201).json( ApiResponse.success('User created', { token }) );  //return a token if success 
+
+        //using http cookies
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,    //  keep false for local dev
+            sameSite: "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+        res.status(201).json( ApiResponse.success('User created') ); 
     } catch (error) {
         console.error(error);
         res.status(500).json(ApiResponse.error('unable to signup', error.message));  //if unable to signup due to some reason 
@@ -54,7 +62,13 @@ const login = async (req, res) => {
         }
         // generate token
         const token = generateToken(user._id);
-        res.status(200).json( ApiResponse.success('Login successful', { token }) );
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,    //  keep false for local dev
+            sameSite: "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+        res.status(200).json( ApiResponse.success('Login successful') );
     } catch (error) {
         console.error(error);
         res.status(500).json( ApiResponse.error('Server error') );

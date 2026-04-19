@@ -4,11 +4,8 @@ import User from "../models/User.model.js";
 
 const protect = async (req, res, next) => {
     try {
-        let token;
-        // 1. Extract token from header
-        if ( req.headers.authorization && req.headers.authorization.startsWith("Bearer") ) {
-            token = req.headers.authorization.split(" ")[1];
-        }
+        //extract token from cookies
+        const token = req.cookies.token;
         // 2. If no token
         if (!token) {
             return res.status(401).json(ApiResponse.error("Not authorized, no token"));
@@ -16,7 +13,7 @@ const protect = async (req, res, next) => {
         // 3. Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         // 4. Get user from DB (optional but recommended)
-        const user = await User.findById(decoded.userId);
+        const user = await User.findById(decoded.userId).select("-password");
         if (!user) {
             return res.status(401).json(ApiResponse.error("User not found"));
         }

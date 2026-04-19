@@ -5,6 +5,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import connectDB from "./src/config/db.js";
+import cookieParser from 'cookie-parser';
 
 import healthCheckRoutes from "./src/routes/healthCheck.routes.js";
 import authRoutes from "./src/routes/auth.routes.js";
@@ -21,6 +22,7 @@ const app = express();
 //defining the middleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 //use health check routes
 app.use("/health", healthCheckRoutes);
