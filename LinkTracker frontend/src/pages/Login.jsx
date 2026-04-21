@@ -1,23 +1,24 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 export default function Login() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState("");
 	const navigate = useNavigate();
+	const { showToast } = useToast();
 
 	const handleLogin = async () => {
 		try {
 			setLoading(true);
-			setError("");
 			await loginUser(email, password);
+			showToast("Login successful", "success");
 			navigate("/");
 		} catch (err) {
 			console.error(err);
-			setError(err.message || "Something went wrong");
+			showToast(err.message || "Something went wrong", "error");
 		} finally {
 			setLoading(false);
 		}
@@ -52,12 +53,6 @@ export default function Login() {
 						/>
 					</div>
 				</div>
-
-				{error ? (
-					<p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-						{error}
-					</p>
-				) : null}
 
 				<button
 					onClick={handleLogin}
