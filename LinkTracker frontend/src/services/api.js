@@ -1,5 +1,5 @@
+//defining th baseURL
 const BASE_URL = "http://localhost:5000";
-
 
 //this is the login API service
 export const loginUser = async (email, password) => {
@@ -21,6 +21,7 @@ export const loginUser = async (email, password) => {
     return data;
 };
 
+//this is the logout API
 export const logoutUser = async () => {
     const res = await fetch(`${BASE_URL}/api/auth/logout`, {
         method: "POST",
@@ -36,7 +37,6 @@ export const logoutUser = async () => {
     return data;
 };
 
-
 //this is api to get all user links 
 export const getLinks = async () => {
     const res = await fetch(`${BASE_URL}/api/links`, {
@@ -51,22 +51,40 @@ export const getLinks = async () => {
     return data;
 };
 
-
 //this is the api to create a new Link
-export const createLink = async (originalUrl) => {
+export const createLink = async (originalUrl, name) => {
     const res = await fetch(`${BASE_URL}/api/links`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
         credentials: "include", // cookie auth
-        body: JSON.stringify({ originalUrl }),
+        body: JSON.stringify({ originalUrl, name }),
     });
 
     const data = await res.json();
 
     if (!res.ok) {
         throw new Error(data.message || "Failed to create link");
+    }
+
+    return data;
+};
+
+// Delete a API to delete a link 
+export const deleteLink = async (linkId) => {
+    const res = await fetch(`${BASE_URL}/api/links/${linkId}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.message || "Failed to delete link");
     }
 
     return data;
