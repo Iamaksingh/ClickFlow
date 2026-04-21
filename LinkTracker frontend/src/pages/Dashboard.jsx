@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getLinks, createLink, logoutUser } from "../services/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 const baseUrl = "http://localhost:5000";
 
@@ -9,8 +10,10 @@ export default function Dashboard() {
 	const [links, setLinks] = useState([]);
 	const [url, setUrl] = useState("");
 	const [loading, setLoading] = useState(true);
+	const [creating, setCreating] = useState(false);
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const navigate = useNavigate();
+	const { showToast } = useToast();
 
 	//fetch all user links
 	const fetchLinks = async () => {
@@ -32,17 +35,20 @@ export default function Dashboard() {
 	const handleCreate = async () => {
 		try {
 			if (!url.startsWith("http")) {
-				alert("Enter valid URL");
+				showToast("Enter valid URL", "error");
 				return;
 			}
-
+			setCreating(true);
 			await createLink(url);
+			showToast("Link created successfully", "success");
 
 			setUrl("");        // clear input
-			fetchLinks();      // 🔥 refresh list
+			await fetchLinks();      // refresh list
 		} catch (err) {
 			console.error(err);
-			alert(err.message);
+			showToast(err.message || "Unable to create link", "error");
+		} finally {
+			setCreating(false);
 		}
 	};
 
@@ -57,7 +63,7 @@ export default function Dashboard() {
 			setLinks([]);
 		} catch (err) {
 			console.error(err);
-			alert(err.message || "Unable to logout");
+			showToast(err.message || "Unable to logout", "error");
 		}
 	};
 
@@ -103,9 +109,10 @@ export default function Dashboard() {
 
 					<button
 						onClick={handleCreate}
-						className="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition font-medium"
+						disabled={creating}
+						className="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed"
 					>
-						Create
+						{creating ? "Creating..." : "Create"}
 					</button>
 				</div>
 				<div className="space-y-4">
@@ -147,8 +154,14 @@ export default function Dashboard() {
 
 											<div className="flex flex-wrap gap-2">
 												<button
-													onClick={() => {
-														navigator.clipboard.writeText(shortUrl);
+													onClick={async () => {
+														try {
+															await navigator.clipboard.writeText(shortUrl);
+															showToast("Link copied to clipboard", "success");
+														} catch (err) {
+															console.error(err);
+															showToast("Unable to copy link", "error");
+														}
 													}}
 													className="text-sm font-medium bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition cursor-pointer"
 												>
