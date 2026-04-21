@@ -26,13 +26,15 @@ const getTotalClicks = async (linkId) => {
 
 // get the clicks per day for last 30 days 
 const getClicksPerDay = async (linkId) => {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const thirtyDayStart = new Date(todayStart);
+    thirtyDayStart.setDate(thirtyDayStart.getDate() - 29);
     const result = await ClickEvent.aggregate([
         {    
             $match: {    //match all the click events with this linkId and having date more then 30 days ago
                 linkId: toObjectId(linkId),
-                timestamp: { $gte: thirtyDaysAgo }
+                timestamp: { $gte: thirtyDayStart }
             }
         },
         {
@@ -48,7 +50,7 @@ const getClicksPerDay = async (linkId) => {
             }
         },
         {
-            $sort: { _id: 1 }  // sort this data in ascending order 
+            $sort: { _id: -1 }  // sort by latest date first
         },
         {
             $project: {
@@ -58,7 +60,28 @@ const getClicksPerDay = async (linkId) => {
             }
         }
     ]);
-    return result;
+
+    // fill missing dates with zero count so graph can show continuous daily points
+    const countsByDate = new Map(result.map((entry) => [entry.date, entry.count]));
+    const filledSeries = [];
+
+    const currentDate = new Date(thirtyDayStart);
+    const endDate = new Date(todayStart);
+
+    while (currentDate <= endDate) {
+        const formattedDate = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Kolkata",
+        }).format(currentDate);
+
+        filledSeries.push({
+            date: formattedDate,
+            count: countsByDate.get(formattedDate) || 0,
+        });
+
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return filledSeries;
 };
 
 
@@ -91,31 +114,33 @@ const getPeakHour = async (linkId) => {
 //get trend information
 const getTrend = async (linkId) => {
     const now = new Date();
+    const dayStart = new Date(now.setHours(0, 0, 0, 0));
 
-    // Normalize to midnight today
-    const todayStart = new Date(now.setHours(0, 0, 0, 0));
+    // Build two non-overlapping 3-day windows:
+    // recent3: [recent3Start, recent3End)
+    // prev3:   [prev3Start, recent3Start)
+    const recent3End = new Date(dayStart);
+    recent3End.setDate(recent3End.getDate() + 1); // exclusive upper bound (start of tomorrow)
 
-    // Last 3 days (today + 2 before)
-    const last3Start = new Date(todayStart);
-    last3Start.setDate(last3Start.getDate() - 3);
+    const recent3Start = new Date(dayStart);
+    recent3Start.setDate(recent3Start.getDate() - 2); // today + previous 2 days
 
-    // Previous 3 days
-    const prev3Start = new Date(todayStart);
-    prev3Start.setDate(prev3Start.getDate() - 6);
+    const prev3Start = new Date(recent3Start);
+    prev3Start.setDate(prev3Start.getDate() - 3);
 
     const result = await ClickEvent.aggregate([
         {
             $match: {
                 linkId: toObjectId(linkId),
-                timestamp: { $gte: prev3Start }
+                timestamp: { $gte: prev3Start, $lt: recent3End }
             }
         },
         {
             $project: {
                 period: {
                     $cond: [
-                        { $gte: ["$timestamp", last3Start] },
-                        "last3",
+                        { $gte: ["$timestamp", recent3Start] },
+                        "recent3",
                         "prev3"
                     ]
                 }
@@ -129,21 +154,21 @@ const getTrend = async (linkId) => {
         }
     ]);
 
-    let last3 = 0, prev3 = 0;
+    let recent3 = 0, prev3 = 0;
 
     result.forEach(d => {
-        if (d._id === "last3"){
-            last3 = d.count;
+        if (d._id === "recent3"){
+            recent3 = d.count;
         }
         if (d._id === "prev3"){
             prev3 = d.count;
         }
     });
 
-    if (last3 > prev3) {
+    if (recent3 > prev3) {
         return "up";
     }
-    if (last3 < prev3) {
+    if (recent3 < prev3) {
         return "down";
     }
     return "flat";
