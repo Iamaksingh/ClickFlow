@@ -34,3 +34,24 @@ export const getLinks = async () => {
         console.error(err);
     }
 };
+
+
+//this is the api to create a new Link
+export const createLink = async (originalUrl) => {
+    const res = await fetch(`${BASE_URL}/api/links`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include", // cookie auth
+        body: JSON.stringify({ originalUrl }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.message || "Failed to create link");
+    }
+
+    return data;
+};
