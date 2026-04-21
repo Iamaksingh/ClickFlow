@@ -21,18 +21,34 @@ export const loginUser = async (email, password) => {
     return data;
 };
 
+export const logoutUser = async () => {
+    const res = await fetch(`${BASE_URL}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.message || "Logout failed");
+    }
+
+    return data;
+};
+
 
 //this is api to get all user links 
 export const getLinks = async () => {
-    try {
-        const res = await fetch(`${BASE_URL}/api/links`, {
-            credentials: "include", // must
-        });
-        const data = await res.json();
-        return data;
-    } catch (err) {
-        console.error(err);
+    const res = await fetch(`${BASE_URL}/api/links`, {
+        credentials: "include", // must
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.message || "Failed to fetch links");
     }
+
+    return data;
 };
 
 
@@ -51,6 +67,21 @@ export const createLink = async (originalUrl) => {
 
     if (!res.ok) {
         throw new Error(data.message || "Failed to create link");
+    }
+
+    return data;
+};
+
+// this is api to get analytics for one link
+export const getLinkStats = async (linkId) => {
+    const res = await fetch(`${BASE_URL}/api/links/${linkId}/stats`, {
+        credentials: "include",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.message || "Failed to fetch link analytics");
     }
 
     return data;
