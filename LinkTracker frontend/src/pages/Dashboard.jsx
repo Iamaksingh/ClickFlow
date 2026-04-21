@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getLinks, createLink } from "../services/api.js";
+import { Link, useNavigate } from "react-router-dom";
+import { getLinks, createLink, logoutUser } from "../services/api.js";
 
 const baseUrl = "http://localhost:5000";
 
@@ -8,6 +9,8 @@ export default function Dashboard() {
 	const [links, setLinks] = useState([]);
 	const [url, setUrl] = useState("");
 	const [loading, setLoading] = useState(true);
+	const [isAuthenticated, setIsAuthenticated] = useState(false);
+	const navigate = useNavigate();
 
 	//fetch all user links
 	const fetchLinks = async () => {
@@ -15,8 +18,11 @@ export default function Dashboard() {
 			setLoading(true);
 			const data = await getLinks();
 			setLinks(data.data);
+			setIsAuthenticated(true);
 		} catch (err) {
 			console.error(err);
+			setIsAuthenticated(false);
+			setLinks([]);
 		} finally {
 			setLoading(false);
 		}
@@ -44,12 +50,48 @@ export default function Dashboard() {
 		fetchLinks();
 	}, []);
 
+	const handleLogout = async () => {
+		try {
+			await logoutUser();
+			setIsAuthenticated(false);
+			setLinks([]);
+		} catch (err) {
+			console.error(err);
+			alert(err.message || "Unable to logout");
+		}
+	};
+
+	if (!loading && !isAuthenticated) {
+		return (
+			<div className="min-h-screen bg-gray-100 px-4 py-10 flex items-center justify-center">
+				<div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+					<h1 className="text-3xl font-bold text-gray-900 mb-3">Link Tracker</h1>
+					<p className="text-gray-600 mb-6">
+						You are logged out. Please login to create and manage your links.
+					</p>
+					<Link
+						to="/login"
+						className="inline-flex items-center justify-center bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition cursor-pointer"
+					>
+						Login
+					</Link>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="min-h-screen bg-gray-100 py-10 px-4">
-			<div className="max-w-3xl mx-auto">
-				<h1 className="text-3xl font-bold mb-8 text-gray-800">
-					Your Links
-				</h1>
+			<div className="max-w-7xl mx-auto">
+				<div className="flex items-center justify-between mb-8">
+					<h1 className="text-3xl font-bold text-gray-800">Your Links</h1>
+					<button
+						onClick={handleLogout}
+						className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition cursor-pointer"
+					>
+						Logout
+					</button>
+				</div>
 				<div className="bg-white p-4 rounded-xl shadow-sm border mb-6 flex gap-2">
 					<input
 						type="text"
@@ -74,34 +116,56 @@ export default function Dashboard() {
 							No links yet. Create one above 🚀
 						</div>
 					) : (
-						<div className="space-y-4">
-							{links.map((link) => (
-								<div
-									key={link._id}
-									className="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center"
-								>
-									<div>
-										<p className="font-semibold text-blue-600">
-											{link.shortCode}
-										</p>
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+							{links.map((link) => {
+								const shortUrl = `${baseUrl}/${link.shortCode}`;
 
-										<p className="text-gray-600 text-sm break-all">
-											{link.originalUrl}
-										</p>
-									</div>
-
-									<button
-										onClick={() => {
-											navigator.clipboard.writeText(
-												`http://localhost:3000/${link.shortCode}`
-											);
-										}}
-										className="text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200"
+								return (
+									<div
+										key={link._id}
+										className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 hover:bg-blue-50/30 transition-all duration-300 ease-out flex flex-col min-h-[220px]"
 									>
-										Copy
-									</button>
-								</div>
-							))}
+										<div className="flex h-full flex-col justify-between gap-4">
+											<div className="space-y-2 min-w-0">
+												<p className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold tracking-wide">
+													/{link.shortCode}
+												</p>
+
+												<p className="text-gray-700 text-sm break-all leading-relaxed">
+													{link.originalUrl}
+												</p>
+
+												<a
+													href={shortUrl}
+													target="_blank"
+													rel="noreferrer"
+													className="inline-block text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline break-all"
+												>
+													{shortUrl}
+												</a>
+											</div>
+
+											<div className="flex flex-wrap gap-2">
+												<button
+													onClick={() => {
+														navigator.clipboard.writeText(shortUrl);
+													}}
+													className="text-sm font-medium bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition cursor-pointer"
+												>
+													Copy Link
+												</button>
+
+												<button
+													onClick={() => navigate(`/links/${link._id}/analytics`)}
+													className="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer"
+												>
+													Analytics
+												</button>
+											</div>
+										</div>
+									</div>
+								);
+							})}
 						</div>
 					)}
 				</div>
