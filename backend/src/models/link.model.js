@@ -15,6 +15,11 @@ const linkSchema = new mongoose.Schema({   //designing a new schema for the link
 		type: String, 
 		unique: true, 
 		index: true 
+	},
+	name: {
+		type: String,
+		trim: true,
+		default: null
 	}
 }, { timestamps: true } );
 

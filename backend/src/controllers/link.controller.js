@@ -7,7 +7,7 @@ import ApiResponse from '../utils/apiResponse.js';
 //and returns the created link in the response. If any errors occur during the process, it returns an appropriate error response.
 const createLink = async (req, res) => {
     try {
-        const { originalUrl } = req.body;
+        const { originalUrl, name } = req.body;
         if (!originalUrl) {  //if empty url is provided return error response
             return res.status(400).json(ApiResponse.error('A URL is required'));
         }
@@ -38,12 +38,14 @@ const createLink = async (req, res) => {
             return res.status(500).json(ApiResponse.error("Failed to generate unique short code, please try again later"));
         }
 
-        const newLink = new Link({ originalUrl: url, shortCode, userId: req.user._id });  //create new link document and refer it to the user and save to database
+        const newLink = new Link({ originalUrl: url, shortCode, userId: req.user._id, name: name || null });  //create new link document and refer it to the user and save to database
         await newLink.save(); 
 
         const data = {  //create data object to return in response
+            _id: newLink._id,
             originalUrl: newLink.originalUrl,
             shortCode: newLink.shortCode,
+            name: newLink.name,
             shortUrl: `${req.protocol}://${req.get("host")}/${newLink.shortCode}`
         };
         return res.status(201).json(ApiResponse.success('Link created successfully', data));
@@ -101,12 +103,71 @@ const getUserLinks = async (req, res) => {
             _id: link._id,
             originalUrl: link.originalUrl,
             shortCode: link.shortCode,
+            name: link.name,
             shortUrl: `${req.protocol}://${req.get("host")}/${link.shortCode}`,
             createdAt: link.createdAt
         }));
         return res.json(ApiResponse.success("User links fetched", data));
     } catch (err) {
         return res.status(500).json(ApiResponse.error("Error fetching links"));
+    }
+};
+
+
+//delete a link by its id
+const deleteLink = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const link = await Link.findById(id);
+        
+        if (!link) {
+            return res.status(404).json(ApiResponse.error('Link not found'));
+        }
+
+        // Verify the link belongs to the authenticated user
+        if (link.userId.toString() !== req.user._id.toString()) {
+            return res.status(403).json(ApiResponse.error('You can only delete your own links'));
+        }
+
+        await Link.findByIdAndDelete(id);
+        // Also delete associated click events
+        await ClickEvent.deleteMany({ linkId: id });
+
+        return res.json(ApiResponse.success('Link deleted successfully'));
+    } catch (err) {
+        return res.status(500).json(ApiResponse.error('Error deleting link', err.message));
+    }
+};
+
+
+//update link details (like name)
+const updateLink = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        
+        const link = await Link.findById(id);
+        
+        if (!link) {
+            return res.status(404).json(ApiResponse.error('Link not found'));
+        }
+
+        // Verify the link belongs to the authenticated user
+        if (link.userId.toString() !== req.user._id.toString()) {
+            return res.status(403).json(ApiResponse.error('You can only update your own links'));
+        }
+
+        link.name = name || null;
+        await link.save();
+
+        return res.json(ApiResponse.success('Link updated successfully', {
+            _id: link._id,
+            originalUrl: link.originalUrl,
+            shortCode: link.shortCode,
+            name: link.name
+        }));
+    } catch (err) {
+        return res.status(500).json(ApiResponse.error('Error updating link', err.message));
     }
 };
 
@@ -126,4 +187,4 @@ const getDeviceType = (userAgent) => {
 
 
 //export the controller functions to be used in route definitions
-export { createLink, redirectLink, getDeviceType , getUserLinks};
+export { createLink, redirectLink, getDeviceType , getUserLinks, deleteLink, updateLink};
