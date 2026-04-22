@@ -4,6 +4,8 @@ import { getLinkStats } from "../services/api";
 import AnalyticsHeader from "../components/analytics/AnalyticsHeader";
 import StatCard from "../components/analytics/StatCard";
 import ClicksPerDayChart from "../components/analytics/ClicksPerDayChart";
+import LinkHealthCard from "../components/analytics/LinkHealthCard";
+import BreakdownCard from "../components/analytics/BreakdownCard";
 
 export default function LinkAnalytics() {
 	const { id } = useParams();
@@ -30,7 +32,7 @@ export default function LinkAnalytics() {
 
 	return (
 		<div className="min-h-screen bg-gray-100 py-10 px-4">
-			<div className="max-w-4xl mx-auto">
+			<div className="max-w-6xl mx-auto">
 				<AnalyticsHeader />
 
 				{loading ? (
@@ -40,15 +42,37 @@ export default function LinkAnalytics() {
 						{error}
 					</div>
 				) : (
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-						<StatCard title="Total Clicks" value={stats.totalClicks} />
-						<StatCard title="Peak Hour" value={`${stats.peakHour}:00`} />
-						<StatCard title="30 Day Avg" value={stats.thirtyDaysAverage} />
-						<div className="bg-white rounded-xl border border-gray-200 p-5 sm:col-span-2 lg:col-span-3">
-							<p className="text-sm text-gray-500">Last Accessed</p>
-							<p className="text-lg font-semibold text-gray-900 mt-1">{stats.lastAccessed || "N/A"}</p>
+					<div className="space-y-6">
+						{/* 4-Column Metric Strip */}
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+							<StatCard title="Total Clicks" value={stats.totalClicks} />
+							<StatCard title="Peak Hour" value={`${stats.peakHour}:00`} />
+							<StatCard title="30 Day Avg" value={stats.thirtyDaysAverage} />
+							<StatCard title="Last Accessed" value={stats.lastAccessed || "N/A"} />
 						</div>
-						<ClicksPerDayChart clicksPerDay={stats.clicksPerDay} trend={stats.trend} />
+
+						{/* Two-Column Section: Chart + Status Sidebar */}
+						<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+							{/* Left: Chart (2 columns) */}
+							<div className="lg:col-span-2">
+								<ClicksPerDayChart clicksPerDay={stats.clicksPerDay} trend={stats.trend} />
+							</div>
+
+							{/* Right: Status Sidebar (1 column) */}
+							<div className="space-y-4">
+								{/* Health Status Card */}
+								<LinkHealthCard
+									staleStatus={stats.staleStatus}
+									spikeDetection={stats.spikeDetection}
+								/>
+
+								{/* Breakdown Card */}
+								<BreakdownCard
+									deviceAnalytics={stats.deviceAnalytics}
+									referrerAnalytics={stats.referrerAnalytics}
+								/>
+							</div>
+						</div>
 					</div>
 				)}
 			</div>
