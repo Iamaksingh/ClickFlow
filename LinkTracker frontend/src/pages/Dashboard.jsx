@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getLinks, createLink, logoutUser, deleteLink } from "../services/api.js";
 import { useToast } from "../components/ToastProvider.jsx";
+import ConfirmationModal from "../components/ConfirmationModal.jsx";
 import LoggedOutState from "../components/dashboard/LoggedOutState.jsx";
 import DashboardHeader from "../components/dashboard/DashboardHeader.jsx";
 import CreateLinkForm from "../components/dashboard/CreateLinkForm.jsx";
@@ -15,6 +16,8 @@ export default function Dashboard() {
 	const [loading, setLoading] = useState(true);
 	const [creating, setCreating] = useState(false);
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
+	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [linkToDelete, setLinkToDelete] = useState(null);
 	const navigate = useNavigate();
 	const { showToast } = useToast();
 
@@ -56,20 +59,34 @@ export default function Dashboard() {
 		}
 	};
 
-	//delete a link
-	const handleDelete = async (linkId) => {
-		if (!window.confirm("Are you sure you want to delete this link?")) {
-			return;
-		}
+	//open delete modal
+	const handleDelete = (linkId) => {
+		setLinkToDelete(linkId);
+		setDeleteModalOpen(true);
+	};
+
+	//confirm delete action
+	const handleConfirmDelete = async () => {
+		if (!linkToDelete) return;
 
 		try {
-			await deleteLink(linkId);
+			await deleteLink(linkToDelete);
 			showToast("Link deleted successfully", "success");
-			setLinks(links.filter(link => link._id !== linkId));
+			setLinks(links.filter(link => link._id !== linkToDelete));
+			setDeleteModalOpen(false);
+			setLinkToDelete(null);
 		} catch (err) {
 			console.error(err);
 			showToast(err.message || "Unable to delete link", "error");
+			setDeleteModalOpen(false);
+			setLinkToDelete(null);
 		}
+	};
+
+	//cancel delete action
+	const handleCancelDelete = () => {
+		setDeleteModalOpen(false);
+		setLinkToDelete(null);
 	};
 
 	const handleCopyLink = async (shortUrl) => {
@@ -85,7 +102,7 @@ export default function Dashboard() {
 	const handleOpenAnalytics = (linkId) => {
 		navigate(`/links/${linkId}/analytics`);
 	};
-	
+
 	//logout user function
 	const handleLogout = async () => {
 		try {
@@ -129,6 +146,17 @@ export default function Dashboard() {
 					/>
 				</div>
 			</div>
+
+			<ConfirmationModal
+				isOpen={deleteModalOpen}
+				title="Delete Link"
+				message="Are you sure you want to delete this link? This action cannot be undone."
+				confirmText="Delete"
+				cancelText="Cancel"
+				isDangerous={true}
+				onConfirm={handleConfirmDelete}
+				onCancel={handleCancelDelete}
+			/>
 		</div>
 	);
 }
