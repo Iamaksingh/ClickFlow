@@ -22,8 +22,6 @@ const getTotalClicks = async (linkId) => {
     return result[0]?.totalClicks || 0;
 };
 
-
-
 // get the clicks per day for last 30 days 
 const getClicksPerDay = async (linkId) => {
     const todayStart = new Date();
@@ -84,7 +82,6 @@ const getClicksPerDay = async (linkId) => {
     return filledSeries;
 };
 
-
 // get the peak hour of the day for the given linkId
 const getPeakHour = async (linkId) => {
     const result = await ClickEvent.aggregate([
@@ -109,7 +106,6 @@ const getPeakHour = async (linkId) => {
 
     return result[0]?._id ?? 0;
 };
-
 
 //get trend information
 const getTrend = async (linkId) => {
@@ -174,5 +170,124 @@ const getTrend = async (linkId) => {
     return "flat";
 };
 
+// Get device analytics breakdown
+const getDeviceAnalytics = async (linkId) => {
+    const result = await ClickEvent.aggregate([
+        {
+            $match: {
+                linkId: toObjectId(linkId)
+            }
+        },
+        {
+            $group: {
+                _id: "$device",
+                count: { $sum: 1 }
+            }
+        },
+        {
+            $sort: { count: -1 }
+        },
+        {
+            $project: {
+                _id: 0,
+                device: { $ifNull: ["$_id", "unknown"] },
+                count: 1
+            }
+        }
+    ]);
 
-export { getTotalClicks, getClicksPerDay, getPeakHour, getTrend };
+    return result;
+};
+
+// Get referrer analytics breakdown
+const getReferrerAnalytics = async (linkId) => {
+    const result = await ClickEvent.aggregate([
+        {
+            $match: {
+                linkId: toObjectId(linkId)
+            }
+        },
+        {
+            $group: {
+                _id: "$referrer",
+                count: { $sum: 1 }
+            }
+        },
+        {
+            $sort: { count: -1 }
+        },
+        {
+            $limit: 10  // Top 10 referrers
+        },
+        {
+            $project: {
+                _id: 0,
+                referrer: { $ifNull: ["$_id", "direct"] },
+                count: 1
+            }
+        }
+    ]);
+
+    return result;
+};
+
+// Detect if link is stale (inactive for more than 7 days)
+const getStaleStatus = async (linkId) => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const lastClick = await ClickEvent.findOne({
+        linkId: toObjectId(linkId)
+    }).sort({ timestamp: -1 }).lean();
+
+    if (!lastClick) {
+        return { isStale: true, lastClickDate: null, daysInactive: null };
+    }
+
+    const lastClickDate = new Date(lastClick.timestamp);
+    const isStale = lastClickDate < sevenDaysAgo;
+    
+    const daysInactive = Math.floor((new Date() - lastClickDate) / (1000 * 60 * 60 * 24));
+
+    return {
+        isStale,
+        lastClickDate: lastClickDate.toLocaleDateString("en-IN"),
+        daysInactive
+    };
+};
+
+// Detect spike (if today's clicks are 3x the daily average AND >= 10 clicks)
+const getSpikeDetection = async (linkId, thirtyDaysAverage) => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
+    const result = await ClickEvent.aggregate([
+        {
+            $match: {
+                linkId: toObjectId(linkId),
+                timestamp: { $gte: todayStart, $lt: todayEnd }
+            }
+        },
+        {
+            $count: "todayClicks"
+        }
+    ]);
+
+    const todayClicks = result[0]?.todayClicks || 0;
+    const spikeThreshold = thirtyDaysAverage * 3;
+    const minThreshold = 10;
+    const hasSpike = todayClicks > spikeThreshold && todayClicks >= minThreshold;
+
+    return {
+        hasSpike,
+        todayClicks,
+        threshold: Number(spikeThreshold.toFixed(2)),
+        spikePercentage: thirtyDaysAverage > 0 ? Number(((todayClicks / thirtyDaysAverage - 1) * 100).toFixed(0)) : 0
+    };
+};
+
+export { getTotalClicks, getClicksPerDay, getPeakHour, getTrend, getDeviceAnalytics, getReferrerAnalytics, getStaleStatus, getSpikeDetection };
