@@ -30,8 +30,12 @@ export default function Dashboard() {
 			setIsAuthenticated(true);
 		} catch (err) {
 			console.error(err);
-			setIsAuthenticated(false);
-			setLinks([]);
+			if (err?.status === 401) {
+				setIsAuthenticated(false);
+				setLinks([]);
+				return;
+			}
+			showToast(err.message || "Unable to fetch links", "error");
 		} finally {
 			setLoading(false);
 		}

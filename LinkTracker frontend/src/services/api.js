@@ -15,7 +15,9 @@ export const loginUser = async (email, password) => {
     const data = await res.json();
 
     if (!res.ok) {
-        throw new Error(data.message || "Login failed");
+        const error = new Error(data.message || "Login failed");
+        error.status = res.status;
+        throw error;
     }
 
     return data;
@@ -35,7 +37,9 @@ export const signupUser = async (email, password) => {
     const data = await res.json();
 
     if (!res.ok) {
-        throw new Error(data.message || "Signup failed");
+        const error = new Error(data.message || "Signup failed");
+        error.status = res.status;
+        throw error;
     }
 
     return data;
@@ -51,7 +55,9 @@ export const logoutUser = async () => {
     const data = await res.json();
 
     if (!res.ok) {
-        throw new Error(data.message || "Logout failed");
+        const error = new Error(data.message || "Logout failed");
+        error.status = res.status;
+        throw error;
     }
 
     return data;
@@ -65,7 +71,9 @@ export const getLinks = async () => {
     const data = await res.json();
 
     if (!res.ok) {
-        throw new Error(data.message || "Failed to fetch links");
+        const error = new Error(data.message || "Failed to fetch links");
+        error.status = res.status;
+        throw error;
     }
 
     return data;
@@ -85,7 +93,9 @@ export const createLink = async (originalUrl, name) => {
     const data = await res.json();
 
     if (!res.ok) {
-        throw new Error(data.message || "Failed to create link");
+        const error = new Error(data.message || "Failed to create link");
+        error.status = res.status;
+        throw error;
     }
 
     return data;
@@ -104,7 +114,9 @@ export const deleteLink = async (linkId) => {
     const data = await res.json();
 
     if (!res.ok) {
-        throw new Error(data.message || "Failed to delete link");
+        const error = new Error(data.message || "Failed to delete link");
+        error.status = res.status;
+        throw error;
     }
 
     return data;
@@ -119,7 +131,9 @@ export const getLinkStats = async (linkId) => {
     const data = await res.json();
 
     if (!res.ok) {
-        throw new Error(data.message || "Failed to fetch link analytics");
+        const error = new Error(data.message || "Failed to fetch link analytics");
+        error.status = res.status;
+        throw error;
     }
 
     return data;
