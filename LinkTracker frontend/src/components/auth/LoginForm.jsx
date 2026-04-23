@@ -5,6 +5,7 @@ export default function LoginForm({
 	onEmailChange,
 	onPasswordChange,
 	onLogin,
+	onSignup,
 }) {
 	return (
 		<>
@@ -39,6 +40,18 @@ export default function LoginForm({
 			>
 				{loading ? "Logging in..." : "Login"}
 			</button>
+
+			<div className="mt-4 text-center">
+				<p className="text-sm text-gray-600">
+					Don't have an account?{' '}
+					<button
+						onClick={onSignup}
+						className="text-blue-600 hover:text-blue-700 font-medium transition"
+					>
+						Sign up
+					</button>
+				</p>
+			</div>
 		</>
 	);
 }

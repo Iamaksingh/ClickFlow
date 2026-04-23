@@ -7,6 +7,7 @@ export default function LoginCard({
 	onEmailChange,
 	onPasswordChange,
 	onLogin,
+	onSignup,
 }) {
 	return (
 		<div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
@@ -19,6 +20,7 @@ export default function LoginCard({
 				onEmailChange={onEmailChange}
 				onPasswordChange={onPasswordChange}
 				onLogin={onLogin}
+				onSignup={onSignup}
 			/>
 		</div>
 	);

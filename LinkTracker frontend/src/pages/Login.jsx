@@ -34,6 +34,7 @@ export default function Login() {
 				onEmailChange={setEmail}
 				onPasswordChange={setPassword}
 				onLogin={handleLogin}
+				onSignup={() => navigate("/signup")}
 			/>
 		</div>
 	);
