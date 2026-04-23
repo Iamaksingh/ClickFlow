@@ -1,5 +1,5 @@
 //defining th baseURL
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = import.meta.env.BASE_URL;
 
 //this is the login API service
 export const loginUser = async (email, password) => {

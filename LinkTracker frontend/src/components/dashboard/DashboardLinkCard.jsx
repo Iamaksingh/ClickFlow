@@ -1,4 +1,4 @@
-const baseUrl = "http://localhost:5000";
+const baseUrl = import.meta.env.BASE_URL
 
 export default function DashboardLinkCard({
 	link,

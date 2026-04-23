@@ -2,3 +2,4 @@ backend/node_modules/
 backend/.env
 LinkTrackr_Build_Guide.pdf
 .github/
+LinkTracker frontend/.env
