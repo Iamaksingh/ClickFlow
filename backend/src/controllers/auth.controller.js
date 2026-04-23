@@ -4,6 +4,18 @@ import User from "../models/User.model.js";
 import validator from "validator";
 
 const isProduction = process.env.NODE_ENV === "production";
+const cookieSecure = process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === "true"
+    : isProduction;
+const cookieSameSite = process.env.COOKIE_SAME_SITE || (cookieSecure ? "none" : "lax");
+
+const getCookieOptions = () => ({
+    httpOnly: true,
+    secure: cookieSecure,
+    sameSite: cookieSameSite,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
+});
 
 //signup controller 
 const signup = async (req, res) => {
@@ -27,12 +39,7 @@ const signup = async (req, res) => {
         const token = generateToken(user._id);
 
         //using http cookies
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: isProduction,  // true on Railway
-            sameSite: isProduction ? "none" : "lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
+        res.cookie("token", token, getCookieOptions());
         res.status(201).json(ApiResponse.success('User created'));
     } catch (error) {
         console.error(error);
@@ -63,12 +70,7 @@ const login = async (req, res) => {
         }
         // generate token
         const token = generateToken(user._id);
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: isProduction,              // true on Railway
-            sameSite: isProduction ? "none" : "lax",    //  keep false for local dev
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
+        res.cookie("token", token, getCookieOptions());
         res.status(200).json(ApiResponse.success('Login successful'));
     } catch (error) {
         console.error(error);
@@ -81,8 +83,9 @@ const logout = async (req, res) => {
     try {
         res.clearCookie("token", {
             httpOnly: true,
-            secure: isProduction,
-            sameSite: isProduction ? "none" : "lax",
+            secure: cookieSecure,
+            sameSite: cookieSameSite,
+            path: "/",
         });
 
         return res.status(200).json(ApiResponse.success("Logout successful"));

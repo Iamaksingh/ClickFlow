@@ -19,8 +19,34 @@ const PORT = process.env.PORT || 5000;
 //make an express app
 const app = express();
 
+const rawAllowedOrigins = process.env.FRONTEND_URL || "";
+const allowedOrigins = rawAllowedOrigins
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 //defining the middleware
-app.use(cors({origin: process.env.FRONTEND_URL ,credentials: true,}));
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Allow non-browser tools (Postman/curl) and same-origin requests.
+      if (!origin) return callback(null, true);
+
+      // During local development, allow common localhost variants.
+      const devOrigins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+      ];
+
+      if (allowedOrigins.includes(origin) || devOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
