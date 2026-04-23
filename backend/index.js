@@ -18,6 +18,7 @@ const PORT = process.env.PORT || 5000;
 
 //make an express app
 const app = express();
+app.set('trust proxy', 1);
 
 const normalizeOrigin = (value) => value.replace(/\/+$/, "").toLowerCase();
 
@@ -29,34 +30,22 @@ const allowedOrigins = rawAllowedOrigins
   .filter(Boolean);
 
 //defining the middleware
-app.use(
-  cors({
-    origin(origin, callback) {
-      // Allow non-browser tools (Postman/curl) and same-origin requests.
-      if (!origin) return callback(null, true);
-      const normalizedOrigin = normalizeOrigin(origin);
+const allowedOrigins = [
+  "https://link-tracker.vercel.app", // your main production URL
+];
 
-      // During local development, allow common localhost variants.
-      const devOrigins = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://localhost:5173",
-        "https://127.0.0.1:5173",
-      ];
-      const normalizedDevOrigins = devOrigins.map((value) => normalizeOrigin(value));
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow Vercel preview URLs + your production URL
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    }
+  },
+  credentials: true,
+}));
 
-      if (
-        allowedOrigins.includes(normalizedOrigin) ||
-        normalizedDevOrigins.includes(normalizedOrigin)
-      ) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`Origin not allowed by CORS: ${origin}`));
-    },
-    credentials: true,
-  })
-);
 app.use(express.json());
 app.use(cookieParser());
 
