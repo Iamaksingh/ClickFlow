@@ -1,12 +1,11 @@
-const baseUrl = import.meta.env.VITE_BASE_URL;
-
 export default function DashboardLinkCard({
 	link,
 	onCopyLink,
 	onOpenAnalytics,
 	onDeleteLink,
 }) {
-	const shortUrl = `${baseUrl}/${link.shortCode}`;
+	const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
+	const shortUrl = link.shortUrl || `${baseUrl.replace(/\/$/, "")}/${link.shortCode}`;
 	const truncatedUrl =
 		link.originalUrl.length > 45
 			? `${link.originalUrl.substring(0, 45)}...`
@@ -81,7 +80,7 @@ export default function DashboardLinkCard({
 
 			<div className="flex gap-2 pt-4 border-t border-gray-100">
 				<button
-					onClick={() => onCopyLink(shortUrl)}
+					onClick={() => onCopyLink(link)}
 					className="flex-1 text-sm font-medium text-gray-700 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition cursor-pointer"
 				>
 					Copy Link

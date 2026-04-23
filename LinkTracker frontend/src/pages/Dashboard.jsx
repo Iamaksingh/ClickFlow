@@ -93,8 +93,10 @@ export default function Dashboard() {
 		setLinkToDelete(null);
 	};
 
-	const handleCopyLink = async (shortUrl) => {
+	const handleCopyLink = async (link) => {
 		try {
+			const baseUrl = (import.meta.env.VITE_BASE_URL || window.location.origin).replace(/\/$/, "");
+			const shortUrl = link?.shortUrl || `${baseUrl}/${link.shortCode}`;
 			await navigator.clipboard.writeText(shortUrl);
 			showToast("Link copied to clipboard", "success");
 		} catch (err) {
