@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-//configure dotenv for environment variables
 dotenv.config();
 
 import express from 'express';
@@ -13,30 +12,19 @@ import linkRoutes from "./src/routes/link.routes.js";
 import {redirectLink} from "./src/controllers/link.controller.js";
 import { redirectLimiter } from "./src/middleware/rateLimiter.middleware.js";
 
-//defining the port
 const PORT = process.env.PORT || 5000;
 
-//make an express app
 const app = express();
-app.set('trust proxy', 1);
+app.set('trust proxy', 1); // ✅ fixes the rate-limiter X-Forwarded-For error
 
-const normalizeOrigin = (value) => value.replace(/\/+$/, "").toLowerCase();
-
-const rawAllowedOrigins = process.env.FRONTEND_URL || "";
-const allowedOrigins = rawAllowedOrigins
+// ✅ Single allowedOrigins definition — delete the old one
+const allowedOrigins = (process.env.FRONTEND_URL || "")
   .split(",")
-  .map((origin) => origin.trim())
-  .map((origin) => normalizeOrigin(origin))
+  .map(o => o.trim().replace(/\/+$/, "").toLowerCase())
   .filter(Boolean);
-
-//defining the middleware
-const allowedOrigins = [
-  "https://link-tracker.vercel.app", // your main production URL
-];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // allow Vercel preview URLs + your production URL
     if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
       callback(null, true);
     } else {
@@ -49,19 +37,11 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-//use health check routes
 app.use("/health", healthCheckRoutes);
-
-//use auth routes
 app.use("/api/auth", authRoutes);
-
-//use link routes 
 app.use("/api/links", linkRoutes);
-
-//define route for redirecting to the original URL when a short URL is accessed
 app.get("/:shortCode", redirectLimiter, redirectLink);
 
-//before starting the server, connect to the database 
 const startServer = async () => { 
   try {
     await connectDB();
