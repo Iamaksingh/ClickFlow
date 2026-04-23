@@ -23,4 +23,4 @@ const linkSchema = new mongoose.Schema({   //designing a new schema for the link
 	}
 }, { timestamps: true } );
 
-export default mongoose.model("Link", linkSchema);  //exporting the model to be used in other parts of the application
+export default mongoose.models.Link || mongoose.model("Link", linkSchema);
