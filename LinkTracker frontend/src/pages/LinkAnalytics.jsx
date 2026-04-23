@@ -6,6 +6,7 @@ import StatCard from "../components/analytics/StatCard";
 import ClicksPerDayChart from "../components/analytics/ClicksPerDayChart";
 import LinkHealthCard from "../components/analytics/LinkHealthCard";
 import BreakdownCard from "../components/analytics/BreakdownCard";
+import MostActiveDayCard from "../components/analytics/MostActiveDayCard";
 
 export default function LinkAnalytics() {
 	const { id } = useParams();
@@ -18,10 +19,12 @@ export default function LinkAnalytics() {
 			try {
 				setLoading(true);
 				setError("");
+				setStats(null);
 				const response = await getLinkStats(id);
 				setStats(response.data);
 			} catch (err) {
 				setError(err.message || "Failed to load analytics");
+				setStats(null);
 			} finally {
 				setLoading(false);
 			}
@@ -33,7 +36,7 @@ export default function LinkAnalytics() {
 	return (
 		<div className="min-h-screen bg-gray-100 py-10 px-4">
 			<div className="max-w-6xl mx-auto">
-				<AnalyticsHeader />
+				<AnalyticsHeader linkName={stats?.linkName} />
 
 				{loading ? (
 					<p className="text-gray-500">Loading analytics...</p>
@@ -51,28 +54,26 @@ export default function LinkAnalytics() {
 							<StatCard title="Last Accessed" value={stats.lastAccessed || "N/A"} />
 						</div>
 
-						{/* Two-Column Section: Chart + Status Sidebar */}
-						<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-							{/* Left: Chart (2 columns) */}
+						{/* Graph (left) | Link activity, current state, most active day (right) */}
+						<div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-stretch">
 							<div className="lg:col-span-2">
 								<ClicksPerDayChart clicksPerDay={stats.clicksPerDay} trend={stats.trend} />
 							</div>
 
-							{/* Right: Status Sidebar (1 column) */}
-							<div className="space-y-4">
-								{/* Health Status Card */}
+							<div className="flex min-h-[280px] flex-col justify-between lg:min-h-0 lg:h-full">
 								<LinkHealthCard
 									staleStatus={stats.staleStatus}
 									spikeDetection={stats.spikeDetection}
 								/>
-
-								{/* Breakdown Card */}
-								<BreakdownCard
-									deviceAnalytics={stats.deviceAnalytics}
-									referrerAnalytics={stats.referrerAnalytics}
-								/>
+								<MostActiveDayCard clicksPerDay={stats.clicksPerDay} />
 							</div>
 						</div>
+
+						{/* Full width: device | referrer */}
+						<BreakdownCard
+							deviceAnalytics={stats.deviceAnalytics}
+							referrerAnalytics={stats.referrerAnalytics}
+						/>
 					</div>
 				)}
 			</div>

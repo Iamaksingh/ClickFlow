@@ -1,10 +1,24 @@
+import { useState } from "react";
+
 const chartWidth = 760;
 const chartHeight = 280;
 const padding = { top: 20, right: 20, bottom: 50, left: 40 };
 
 const formatDayOnly = (dateString) => dateString.split("-")[2];
 
+function formatTooltipDate(dateStr) {
+	const d = new Date(`${dateStr}T12:00:00+05:30`);
+	return d.toLocaleDateString("en-IN", {
+		weekday: "short",
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+		timeZone: "Asia/Kolkata",
+	});
+}
+
 export default function ClicksPerDayChart({ clicksPerDay = [], trend = "flat" }) {
+	const [tooltip, setTooltip] = useState(null);
 	if (!clicksPerDay.length) {
 		return <p className="text-sm text-gray-500">No daily click data available.</p>;
 	}
@@ -37,7 +51,7 @@ export default function ClicksPerDayChart({ clicksPerDay = [], trend = "flat" })
 	);
 
 	return (
-		<div className="bg-white rounded-xl border border-gray-200 p-5 sm:col-span-2 lg:col-span-3">
+		<div className="bg-white rounded-xl border border-gray-200 p-5">
 			<div className="flex items-center justify-between mb-3">
 				<p className="text-sm text-gray-500">Clicks Per Day</p>
 				<span className={`text-xs font-medium px-2 py-1 rounded-full ${trendClass}`}>
@@ -46,13 +60,26 @@ export default function ClicksPerDayChart({ clicksPerDay = [], trend = "flat" })
 			</div>
 
 			<div className="space-y-3">
-				<p className="text-xs text-gray-500">Y axis: clicks per day</p>
-				<div className="w-full overflow-x-auto">
+				<p className="text-xs text-gray-500">Y axis: clicks per day · hover points for details</p>
+				<div className="w-full overflow-x-auto relative">
+					{tooltip && (
+						<div
+							role="tooltip"
+							className="pointer-events-none fixed z-50 rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg"
+							style={{ left: tooltip.clientX + 14, top: tooltip.clientY + 14 }}
+						>
+							<p className="font-medium text-gray-100">{formatTooltipDate(tooltip.date)}</p>
+							<p className="text-gray-300 mt-0.5">
+								{tooltip.count} {tooltip.count === 1 ? "click" : "clicks"}
+							</p>
+						</div>
+					)}
 					<svg
 						viewBox={`0 0 ${chartWidth} ${chartHeight}`}
 						className="w-full min-w-[640px]"
 						role="img"
 						aria-label="Clicks per day line graph"
+						onMouseLeave={() => setTooltip(null)}
 					>
 						<line
 							x1={padding.left}
@@ -99,12 +126,40 @@ export default function ClicksPerDayChart({ clicksPerDay = [], trend = "flat" })
 						{points.map((point) => (
 							<g key={point.date}>
 								<circle cx={point.x} cy={point.y} r="4" fill="#2563eb" />
+								<circle
+									cx={point.x}
+									cy={point.y}
+									r="14"
+									fill="transparent"
+									className="cursor-crosshair"
+									onMouseEnter={(e) =>
+										setTooltip({
+											clientX: e.clientX,
+											clientY: e.clientY,
+											date: point.date,
+											count: point.count,
+										})
+									}
+									onMouseMove={(e) =>
+										setTooltip((prev) =>
+											prev && prev.date === point.date
+												? { ...prev, clientX: e.clientX, clientY: e.clientY }
+												: {
+														clientX: e.clientX,
+														clientY: e.clientY,
+														date: point.date,
+														count: point.count,
+												  }
+										)
+									}
+								/>
 								<text
 									x={point.x}
 									y={chartHeight - padding.bottom + 16}
 									textAnchor="middle"
 									fontSize="10"
 									fill="#6b7280"
+									pointerEvents="none"
 								>
 									{formatDayOnly(point.date)}
 								</text>
