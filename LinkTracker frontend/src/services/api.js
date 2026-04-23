@@ -1,5 +1,5 @@
 //defining th baseURL
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = (import.meta.env.VITE_BASE_URL || "").replace(/\/+$/, "");
 
 //this is the login API service
 export const loginUser = async (email, password) => {
