@@ -17,19 +17,19 @@ export default function CreateLinkForm({
 					className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 				/>
 			</div>
-			<div className="flex gap-2">
+			<div className="flex flex-col sm:flex-row gap-2">
 				<input
 					type="text"
 					placeholder="Link name (optional)"
 					value={name}
 					onChange={(e) => onNameChange(e.target.value)}
-					className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+					className="flex-1 min-w-0 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 				/>
 
 				<button
 					onClick={onCreate}
 					disabled={creating}
-					className="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+					className="w-full sm:w-auto bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed"
 				>
 					{creating ? "Creating..." : "Create"}
 				</button>
